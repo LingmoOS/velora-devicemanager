@@ -1,0 +1,676 @@
+// SPDX-FileCopyrightText: 2022 - 2026 UnionTech Software Technology Co., Ltd.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// 项目自身文件
+#include "DeviceMonitor.h"
+#include "EDIDParser.h"
+#include "commonfunction.h"
+#include "commondefine.h"
+#include "DDLog.h"
+
+#include <DApplication>
+
+// Qt库文件
+#include <QLoggingCategory>
+#include <QDate>
+#include <QSize>
+#include <QRegularExpression>
+// 其它头文件
+#include <math.h>
+#include <QProcess>
+
+DWIDGET_USE_NAMESPACE
+using namespace DDLog;
+
+DeviceMonitor::DeviceMonitor()
+    : DeviceBaseInfo()
+    , m_Model("")
+    , m_DisplayInput("")
+    , m_VGA("Disable")
+    , m_HDMI("Disable")
+    , m_DVI("Disable")
+    , m_Interface("")
+    , m_ScreenSize("")
+    , m_AspectRatio("")
+    , m_MainScreen("")
+    , m_CurrentResolution("")
+    , m_SerialNumber("")
+    , m_ProductionWeek("")
+    , m_RefreshRate("")
+    , m_Width(0)
+    , m_Height(0)
+    , m_IsTomlSet(false)
+{
+    qCDebug(appLog) << "DeviceMonitor constructor initialized";
+    // 初始化可显示属性
+    initFilterKey();
+}
+
+// 获得显示屏的大小
+QString DeviceMonitor::parseMonitorSize(const QString &sizeDescription, double &inch, QSize &retSize)
+{
+    qCDebug(appLog) << "Parsing monitor size from description:" << sizeDescription;
+    inch = 0.0;
+
+    // 根据不同的正则表达式解析屏幕大小字符串
+    QString res = sizeDescription;
+
+    QRegularExpression re("^([\\d]*)x([\\d]*) mm$");
+    QRegularExpressionMatch match = re.match(sizeDescription);
+    if (match.hasMatch()) {
+        qCDebug(appLog) << "Matched size description with format: ^([\\d]*)x([\\d]*) mm$";
+        // 获取屏幕宽高 int
+        m_Width = match.captured(1).toInt();
+        m_Height = match.captured(2).toInt();
+        retSize = QSize(m_Width, m_Height);
+
+        // 获取屏幕尺寸大小 inch
+        double width = m_Width / 2.54;
+        double height = m_Height / 2.54;
+        inch = std::sqrt(width * width + height * height) / 10.0;
+        res = QString::number(inch, 10, 1) + " " + translateStr("inch") + " (";
+        res += sizeDescription;
+        res += ")";
+    }
+
+    re.setPattern("([0-9]\\d*)mm x ([0-9]\\d*)mm");
+    match = re.match(sizeDescription);
+    if (match.hasMatch()) {
+        qCDebug(appLog) << "Matched size description with format: ([0-9]\\d*)mm x ([0-9]\\d*)mm";
+        // 获取屏幕宽高 int
+        m_Width = match.captured(1).toInt();
+        m_Height = match.captured(2).toInt();
+        retSize = QSize(m_Width, m_Height);
+
+        double width = m_Width / 2.54;
+        double height = m_Height / 2.54;
+        inch = std::sqrt(width * width + height * height) / 10.0;
+        res = QString::number(inch, 10, 1) + " " + translateStr("inch") + " (";
+        res += sizeDescription;
+        res += ")";
+    }
+
+    qCDebug(appLog) << "Finished parsing monitor size. Result:" << res;
+    return res;
+}
+
+void DeviceMonitor::setInfoFromHwinfo(const QMap<QString, QString> &mapInfo)
+{
+    qCDebug(appLog) << "Setting monitor info from hwinfo data";
+    //设置由hwinfo --monitor获取信息
+    setAttribute(mapInfo, "Model", m_Name);
+    setAttribute(mapInfo, "Vendor", m_Vendor);
+    setAttribute(mapInfo, "Model", m_Model);
+    setAttribute(mapInfo, "", m_DisplayInput);
+    setAttribute(mapInfo, "Size", m_ScreenSize);
+    setAttribute(mapInfo, "", m_MainScreen);
+    if (!Common::isHwPlatform()){
+        setAttribute(mapInfo, "Resolution", m_SupportResolution);
+    }
+    qCDebug(appLog) << "Basic monitor attributes set - Name:" << m_Name << "Vendor:" << m_Vendor << "Model:" << m_Model;
+
+    double inch = 0.0;
+    QSize size(0, 0);
+    QString inchValue = parseMonitorSize(m_ScreenSize, inch, size);
+    m_ScreenSize = inchValue;
+    qCDebug(appLog) << "Screen size parsed:" << m_ScreenSize << "Width:" << size.width() << "Height:" << size.height();
+
+    // 获取当前分辨率 和 当前支持分辨率
+    if (!Common::isHwPlatform()){
+        QStringList listResolution = m_SupportResolution.split(" ");
+        m_SupportResolution = "";
+        foreach (const QString &word, listResolution) {
+            if (word.contains("@")) {
+                m_SupportResolution.append(word);
+                m_SupportResolution.append(", ");
+            }
+        }
+    }
+
+    // 计算显示比例
+    caculateScreenRatio();
+
+    if (!Common::isHwPlatform()){
+        m_SupportResolution.replace(QRegularExpression(", $"), "");
+    }
+    qCDebug(appLog) << "Supported resolutions processed:" << m_SupportResolution;
+
+    m_ProductionWeek  = transWeekToDate(mapInfo["Year of Manufacture"], mapInfo["Week of Manufacture"]);
+    setAttribute(mapInfo, "Serial ID", m_SerialNumber);
+    qCDebug(appLog) << "Production week:" << m_ProductionWeek << "Serial:" << m_SerialNumber;
+
+    // 加载其他属性
+    getOtherMapInfo(mapInfo);
+    qCDebug(appLog) << "Finished setting monitor info from hwinfo";
+}
+
+TomlFixMethod DeviceMonitor::setInfoFromTomlOneByOne(const QMap<QString, QString> &mapInfo)
+{
+    qCDebug(appLog) << "Setting monitor info from TOML configuration";
+    if (Common::specialComType == 2)
+        m_IsTomlSet = true;
+    TomlFixMethod ret = TOML_None;
+    // 添加基本信息
+    setTomlAttribute(mapInfo, "Type", m_Model);
+    setTomlAttribute(mapInfo, "Display Input", m_DisplayInput);
+    setTomlAttribute(mapInfo, "Interface Type", m_Interface);
+    qCDebug(appLog) << "Basic monitor attributes set from TOML - Model:" << m_Model << "Input:" << m_DisplayInput << "Interface:" << m_Interface;
+
+    // 添加其他信息,成员变量
+    setTomlAttribute(mapInfo, "Support Resolution", m_SupportResolution);
+    setTomlAttribute(mapInfo, "Current Resolution", m_CurrentResolution);
+    setTomlAttribute(mapInfo, "Display Ratio", m_AspectRatio);    
+    qCDebug(appLog) << "Resolution info set - Supported:" << m_SupportResolution << "Current:" << m_CurrentResolution << "Ratio:" << m_AspectRatio;
+
+    setTomlAttribute(mapInfo, "Primary Monitor", m_MainScreen);
+    setTomlAttribute(mapInfo, "Size", m_ScreenSize);
+    setTomlAttribute(mapInfo, "Serial Number", m_SerialNumber);
+    setTomlAttribute(mapInfo, "Product Date", m_ProductionWeek);
+
+    ret = setTomlAttribute(mapInfo, "Refresh Rate", m_RefreshRate);
+    qCDebug(appLog) << "Additional info set - Primary:" << m_MainScreen << "Size:" << m_ScreenSize << "Serial:" << m_SerialNumber << "Date:" << m_ProductionWeek;
+
+    //3. 获取设备的其它信息
+    getOtherMapInfo(mapInfo);
+    qCDebug(appLog) << "Finished setting monitor info from TOML";
+    return ret;
+}
+
+void DeviceMonitor::setInfoFromEdid(const QMap<QString, QString> &mapInfo)
+{
+    qCDebug(appLog) << "Setting monitor info from EDID data";
+    m_Name = "Monitor " + mapInfo["Vendor"];
+    setAttribute(mapInfo, "Size", m_ScreenSize);
+    setAttribute(mapInfo, "Vendor", m_Vendor);
+    setAttribute(mapInfo, "Date", m_ProductionWeek);
+    setAttribute(mapInfo, "Display Input", m_DisplayInput);
+    setAttribute(mapInfo, "Model", m_Model);
+    qCDebug(appLog) << "Monitor attributes set from EDID - Name:" << m_Name << "Vendor:" << m_Vendor << "Size:" << m_ScreenSize << "Date:" << m_ProductionWeek;
+    getOtherMapInfo(mapInfo);
+    qCDebug(appLog) << "Finished setting monitor info from EDID";
+}
+
+void DeviceMonitor::setInfoFromEdidForCustom(const QMap<QString, QString> &mapInfo)
+{
+    setAttribute(mapInfo, "Size", m_ScreenSize);
+    setAttribute(mapInfo, "Vendor", m_Vendor);
+    setAttribute(mapInfo, "Date", m_ProductionWeek);
+    setAttribute(mapInfo, "Display Input", m_DisplayInput);
+    setAttribute(mapInfo, "Model", m_Model);
+    m_Name = m_Model;
+    getOtherMapInfo(mapInfo);
+}
+
+void DeviceMonitor::setInfoFromDbus(const QMap<QString, QString> &mapInfo)
+{
+    qCDebug(appLog) << "Setting monitor info from D-Bus data";
+    if (mapInfo["Name"].toLower().contains(m_DisplayInput.toLower(), Qt::CaseInsensitive)) {
+        qCDebug(appLog) << "Monitor name contains display input, setting current resolution";
+        setAttribute(mapInfo, "CurResolution", m_CurrentResolution);
+    }
+}
+
+QString DeviceMonitor::transWeekToDate(const QString &year, const QString &week)
+{
+    qCDebug(appLog) << "Transforming week to date. Year:" << year << "Week:" << week;
+    int y = year.toInt();
+    int w = week.toInt();
+    QDate date(y, 1, 1);
+    date = date.addDays(w * 7 - 1);
+    qCDebug(appLog) << "Transformed date:" << date.toString("yyyy-MM");
+    return date.toString("yyyy-MM");
+}
+
+bool DeviceMonitor::setInfoFromXradr(const QString &main, const QString &edid, const QString &rate, const QString &xrandr)
+{
+    qCDebug(appLog) << "Setting monitor info from xrandr";
+    if(m_IsTomlSet) {
+        qCDebug(appLog) << "Monitor info already set from TOML, skipping xrandr";
+        return false;
+    }
+
+    for(auto it: m_LstBaseInfo){
+        if (it.first.contains("Display Input")){
+            if (!main.contains(it.second, Qt::CaseInsensitive)) {
+                return false;
+            }
+        }
+    }
+
+    if (!Common::isHwPlatform()) {
+        QString monitorName = getMonitorNameFromEdid(edid);
+        if (!m_Model.isEmpty() && !monitorName.isEmpty() && monitorName != "Unknown Monitor") {
+            if (!m_Model.contains(monitorName))
+                return false;
+        }
+    }
+
+    // 判断该显示器设备是否已经设置过从xrandr获取的消息
+    if (!m_Interface.isEmpty()) {
+        qCDebug(appLog) << "Interface is not empty, checking current resolution";
+        // 设置当前分辨率
+        if (m_CurrentResolution.isEmpty()) {
+            qCDebug(appLog) << "Current resolution is empty, extracting from main string";
+            QRegularExpression reScreenSize(".*connected.*\\s([0-9]{1,5}x[0-9]{1,5})\\+.*");
+            QRegularExpressionMatch match = reScreenSize.match(main);
+            if (match.hasMatch()) {
+                qCDebug(appLog) << "Matched screen size from main string:" << match.captured(1);
+                if (!rate.isEmpty()) {
+                    qCDebug(appLog) << "Rate is not empty, extracting current resolution";
+                    QString curRate = rate;
+                    QRegularExpression rateStart("[a-zA-Z]");
+                    QRegularExpressionMatch rateMatch = rateStart.match(curRate);
+                    int pos = rateMatch.capturedStart();
+                    if (pos > 0 && curRate.size() > pos && !Common::boardVendorType().isEmpty()) {
+                        curRate = QString::number(ceil(curRate.left(pos).toDouble())) + curRate.right(curRate.size() - pos);
+                    }
+                    m_CurrentResolution = QString("%1@%2").arg(match.captured(1)).arg(curRate).replace("x", "×", Qt::CaseInsensitive);
+                } else {
+                    qCDebug(appLog) << "Rate is empty";
+                    m_CurrentResolution = QString("%1").arg(match.captured(1)).replace("x", "×", Qt::CaseInsensitive);
+                }
+            }
+        }
+
+        if (Common::specialComType <= 0) {
+            QMap<QString, QStringList> monitorResolutionMap = getMonitorResolutionMap(xrandr, m_RawInterface);
+
+            if (monitorResolutionMap.size() == 1) {
+                m_SupportResolution.clear();
+                foreach (const QString &word, monitorResolutionMap.value(m_RawInterface)) {
+                    if (word.contains("@")) {
+                        m_SupportResolution.append(word);
+                        m_SupportResolution.append(", ");
+                    }
+                }
+                m_SupportResolution.remove(QRegularExpression(", $"));
+            }
+        }
+        qCDebug(appLog) << "Interface already processed, returning false";
+        return false;
+    }
+
+    if (main.contains("disconnected")) {
+        qCDebug(appLog) << "Main string contains disconnected, returning false";
+        return false;
+    }
+
+    // wayland xrandr --verbose无法获取edid信息
+    if (qApp->isDXcbPlatform()) {
+        // 根据edid计算屏幕大小
+        if (edid.isEmpty()) {
+            qCDebug(appLog) << "EDID is empty, returning false";
+            return false;
+        }
+        if (!caculateScreenSize(edid)) {
+            qCDebug(appLog) << "Failed to calculate screen size from EDID, returning false";
+            return false;
+        }
+    }
+
+    // 获取屏幕的主要信息，包括借口(HDMI VGA)/是否主显示器和屏幕大小，
+    // 但是这里计算的屏幕大小仅仅用来匹配是否是同一个显示器,真正的屏幕大小计算是根据edid计算的
+    if (!setMainInfoFromXrandr(main, rate)) {
+        qCDebug(appLog) << "Failed to set main info from xrandr, returning false";
+        return false;
+    }
+
+    return true;
+}
+
+const QString &DeviceMonitor::name()const
+{
+    // qCDebug(appLog) << "Getting monitor name:" << m_Name;
+    return m_Name;
+}
+
+const QString &DeviceMonitor::vendor() const
+{
+    // qCDebug(appLog) << "Getting monitor vendor:" << m_Vendor;
+    return m_Vendor;
+}
+
+const QString &DeviceMonitor::driver() const
+{
+    // qCDebug(appLog) << "Getting monitor driver:" << m_Driver;
+    return m_Driver;
+}
+
+bool DeviceMonitor::available()
+{
+    // qCDebug(appLog) << "Checking monitor availability, returning true";
+    return true;
+}
+
+QString DeviceMonitor::subTitle()
+{
+    // qCDebug(appLog) << "Getting monitor subtitle";
+    if (Common::isHwPlatform()) {
+        m_Name.clear();
+    }
+    return m_Name;
+}
+
+const QString DeviceMonitor::getOverviewInfo()
+{
+    qCDebug(appLog) << "Getting monitor overview information";
+    QString ov;
+    if (Common::isShowScreenSize()) {
+        if (Common::specialComType == 6 || Common::specialComType == 7) {
+            ov = QString("(%1)").arg(m_ScreenSize);
+        } else {
+            ov = QString("%1(%2)").arg(m_Name).arg(m_ScreenSize);
+        }
+    } else {
+        if (Common::specialComType == 6 || Common::specialComType == 7) {
+            ov = "";
+        } else {
+            ov = QString("%1").arg(m_Name);
+        }
+    }
+    qCDebug(appLog) << "Monitor overview:" << ov;
+    return ov;
+}
+
+void DeviceMonitor::initFilterKey()
+{
+    qCDebug(appLog) << "Initializing filter keys for monitor";
+    addFilterKey("Date");
+}
+
+void DeviceMonitor::loadBaseDeviceInfo()
+{
+    qCDebug(appLog) << "Loading base device info for monitor";
+    // 添加基本信息
+    if (Common::specialComType != 6 && Common::specialComType != 5) {
+        addBaseDeviceInfo("Name", m_Name);
+        addBaseDeviceInfo("Vendor", m_Vendor);
+        addBaseDeviceInfo("Type", m_Model);
+        addBaseDeviceInfo("Display Input", m_DisplayInput);
+    }
+    addBaseDeviceInfo("Interface Type", m_Interface);
+}
+
+void DeviceMonitor::loadOtherDeviceInfo()
+{
+    qCDebug(appLog) << "Loading other device info for monitor";
+    // 添加其他信息,成员变量
+    addOtherDeviceInfo("Support Resolution", m_SupportResolution);
+    if (m_CurrentResolution != "@Hz") {
+        addOtherDeviceInfo("Current Resolution", m_CurrentResolution);
+        addOtherDeviceInfo("Display Ratio", m_AspectRatio);
+        if (Common::specialComType == 4) {
+            if (m_CurrentResolution.contains("@")) {
+                QStringList refreshList = m_CurrentResolution.split('@', QT_SKIP_EMPTY_PARTS);
+                if (refreshList.size() == 2) {
+                    m_RefreshRate = refreshList.at(1).trimmed();
+                }
+            }
+        }
+    }
+    addOtherDeviceInfo("Primary Monitor", m_MainScreen);
+    if (Common::isShowScreenSize())
+        addOtherDeviceInfo("Size", m_ScreenSize);
+    addOtherDeviceInfo("Serial Number", m_SerialNumber);
+//    addOtherDeviceInfo("Product Date", m_ProductionWeek);
+
+    mapInfoToList();
+    qCDebug(appLog) << "Other device info loaded";
+}
+
+void DeviceMonitor::loadTableData()
+{
+    qCDebug(appLog) << "Loading table data for monitor";
+    m_TableData.append(m_Name);
+    m_TableData.append(m_Vendor);
+    m_TableData.append(m_Model);
+}
+
+bool DeviceMonitor::setMainInfoFromXrandr(const QString &info, const QString &rate)
+{
+    qCDebug(appLog) << "Setting main info from xrandr";
+    //  bug89456：显示设备接口类型DP，VGA，HDMI，eDP，DisplayPort
+    //  还可能会有其它接口类型，为了避免每一次遇到新的接口类型就要修改代码
+    //  使用正则表达式获取接口类型进行显示
+    // 使用 QRegularExpression 替换 QRegExp
+    QRegularExpression reStart("^([a-zA-Z]*)-[\\s\\S]*");
+    QRegularExpressionMatch match = reStart.match(info);
+    if (match.hasMatch()) {
+        qCDebug(appLog) << "Matched interface from xrandr info:" << match.captured(1);
+        m_Interface = match.captured(1);
+    }
+
+    if (info.contains("connected")) {
+        QStringList monitorInfoList = info.split(" ", QT_SKIP_EMPTY_PARTS);
+        if (monitorInfoList.size() > 0){
+            m_RawInterface = monitorInfoList.at(0).trimmed();
+        }
+    }
+
+    // wayland xrandr --verbose无primary信息
+    if (qApp->isDXcbPlatform()) {
+        qCDebug(appLog) << "Running on XCB platform, checking for primary display";
+        // 设置是否是主显示器
+        if (info.contains("primary")) {
+            qCDebug(appLog) << "Primary display";
+            m_MainScreen = "Yes";
+        } else {
+            qCDebug(appLog) << "Not primary display";
+            m_MainScreen = "NO";
+        }
+    }
+
+    // 设置当前分辨率
+    QRegularExpression reScreenSize(".*connected.*\\s([0-9]{1,5}x[0-9]{1,5})\\+.*");
+    match = reScreenSize.match(info);
+    if (match.hasMatch()) {
+        qCDebug(appLog) << "Found screen size in xrandr info:" << match.captured(1);
+        if (!rate.isEmpty()) {
+            qCDebug(appLog) << "Rate is not empty, calculating current resolution with rate:" << rate;
+            QString curRate = rate;
+            QRegularExpression rateStart("[a-zA-Z]");
+            QRegularExpressionMatch rateMatch = rateStart.match(curRate);
+            int pos = rateMatch.capturedStart();
+            if (pos > 0 && curRate.size() > pos && !Common::boardVendorType().isEmpty()) {
+                qCDebug(appLog) << "Adjusting rate for board vendor type";
+                if (Common::specialComType == 1) {
+                    curRate = QString::number(ceil(curRate.left(pos).toDouble())) + ".00" + curRate.right(curRate.size() - pos);
+                } else {
+                    curRate = QString::number(ceil(curRate.left(pos).toDouble())) + curRate.right(curRate.size() - pos);
+                }
+            }
+            if (Common::specialComType == 1 || Common::specialComType == 6) {
+                m_RefreshRate = QString("%1").arg(curRate);
+            }
+            if (Common::specialComType == 5 || Common::specialComType == 6) {
+                m_CurrentResolution = QString("%1").arg(match.captured(1)).replace("x", "×", Qt::CaseInsensitive);
+            } else {
+                m_CurrentResolution = QString("%1 @%2").arg(match.captured(1)).arg(curRate).replace("x", "×", Qt::CaseInsensitive);
+            }
+        } else {
+            qCDebug(appLog) << "Rate is empty, setting current resolution without rate";
+            m_CurrentResolution = QString("%1").arg(match.captured(1).replace("x", "×", Qt::CaseInsensitive));
+        }
+    }
+
+    qCDebug(appLog) << "Finished setting main info from xrandr. Interface:" << m_Interface << "Primary:" << m_MainScreen << "Resolution:" << m_CurrentResolution;
+    return true;
+}
+
+void DeviceMonitor::caculateScreenRatio()
+{
+    qCDebug(appLog) << "Calculating screen ratio for width:" << m_Width << "height:" << m_Height;
+    QRegularExpression re("^([\\d]*)x([\\d]*)(.*)$");
+    QRegularExpressionMatch match = re.match(m_CurrentResolution);
+    if (match.hasMatch()) {
+        int width = match.captured(1).toInt();
+        int height = match.captured(2).toInt();
+        int gys = gcd(width, height);
+        int w = width / gys;
+        int h = height / gys;
+
+        if (w > 21)
+            findAspectRatio(w, h, w, h);
+
+        m_AspectRatio = QString::number(w) + " : " + QString::number(h);
+    }
+}
+
+int DeviceMonitor::gcd(int a, int b)
+{
+    qCDebug(appLog) << "Calculating GCD for" << a << "and" << b;
+    if (a < b)
+        std::swap(a, b);
+
+    if (a % b == 0) {
+        qCDebug(appLog) << "GCD is" << b;
+        return b;
+    } else {
+        return gcd(b, a % b);
+    }
+}
+
+bool DeviceMonitor::findAspectRatio(int width, int height, int &ar_w, int &ar_h)
+{
+    qCDebug(appLog) << "Finding aspect ratio for width:" << width << "height:" << height;
+    float r1 = float(width) / float(height);
+
+    for (ar_w = 21; ar_w > 0; --ar_w) {
+        for (ar_h = 21; ar_h > 0; --ar_h) {
+            if (std::abs(r1 - float(ar_w) / float(ar_h)) / r1 < 0.01) {
+                int r = gcd(ar_w, ar_h);
+                ar_w /= r;
+                ar_h /= r;
+                qCDebug(appLog) << "Found aspect ratio match:" << ar_w << ":" << ar_h;
+                return true;
+            }
+        }
+    }
+
+    qCDebug(appLog) << "Aspect ratio not found";
+    return false;
+}
+
+void DeviceMonitor::caculateScreenSize()
+{
+    qCDebug(appLog) << "Calculating screen size from string:" << m_ScreenSize;
+    // 527x296 mm
+    QRegularExpression re(".*([0-9]{3,5})x([0-9]{3,5})\\smm$");
+    QRegularExpressionMatch match = re.match(m_ScreenSize);
+    if (match.hasMatch()) {
+        qCDebug(appLog) << "Matched screen size pattern";
+        m_Width = match.captured(1).toInt();
+        m_Height = match.captured(2).toInt();
+
+        double inch = std::sqrt((m_Width / 2.54) * (m_Width / 2.54) + (m_Height / 2.54) * (m_Height / 2.54)) / 10.0;
+        m_ScreenSize = QString("%1 %2(%3mm×%4mm)").arg(QString::number(inch, '0', 1)).arg(translateStr("inch")).arg(m_Width).arg(m_Height);
+        qCDebug(appLog) << "Calculated screen size:" << m_ScreenSize;
+
+    }
+}
+
+bool DeviceMonitor::caculateScreenSize(const QString &edid)
+{
+    qCDebug(appLog) << "Calculating screen size from EDID";
+    // edid parse
+    EDIDParser edidParse;
+    QString errormsg;
+    if (!edidParse.setEdid(edid, errormsg)) {
+        qCDebug(appLog) << "Failed to set EDID, returning false";
+        return false;
+    }
+    // 使用edid的厂商信息
+    if (!edidParse.vendor().isEmpty()) {
+        qCDebug(appLog) << "Using EDID vendor:" << edidParse.vendor();
+    }
+        m_Vendor = edidParse.vendor();
+    double height = edidParse.height();
+    double width = edidParse.width();
+    if (height <= 0 || width <= 0)
+        return false;
+
+    // 比对从hwinfo和xrandr里面获取日期，不一致返回
+    if (!m_ProductionWeek.isEmpty() && m_ProductionWeek != edidParse.releaseDate())
+        return false;
+    m_ProductionWeek = edidParse.releaseDate();
+
+    // 如果从hwinfo和edid里面获取的信息差距很小则使用hwinfo里面的
+    // 如果从hwinfo和edid里面获取的信息差距很大则使用edid里面的
+    if (fabs(width * 10 - m_Width) < 10 && fabs(height * 10 - m_Height) < 10)
+        return true;
+
+    double inch = std::sqrt(height * height + width * width) / 2.54 / 10;
+    m_ScreenSize = QString("%1 %2(%3mm×%4mm)").arg(QString::number(inch, '0', 1)).arg(translateStr("inch")).arg(width).arg(height);
+    return true;
+}
+
+QString DeviceMonitor::getMonitorNameFromEdid(const QString &edid)
+{
+    EDIDParser edidParse;
+    QString errormsg;
+    if (!edidParse.setEdid(edid, errormsg))
+        return "";
+
+    return edidParse.monitorName();
+}
+
+QMap<QString, QStringList> DeviceMonitor::getMonitorResolutionMap(QString rawText, QString key, bool round)
+{
+    QMap<QString, QStringList> monitorResolutionMap;
+
+    if (!rawText.isEmpty()) {
+        QStringList rawLines = rawText.split("\n", QT_SKIP_EMPTY_PARTS);
+
+        // get the resolution
+        for (auto line : rawLines) {
+
+            // handel disconnected monitor
+            if (line.contains("disconnected", Qt::CaseInsensitive))
+                continue;
+
+            // handel connected monitor
+            if (!line.startsWith(" ") && line.contains("connected")) {
+                QStringList monitorInfoList = line.split(" ", QT_SKIP_EMPTY_PARTS);
+                if (monitorInfoList.size() > 0){
+                    monitorResolutionMap.insert(monitorInfoList.at(0).trimmed(), QStringList());
+                }
+            }
+
+            // handel resolution
+            if (line.startsWith(" ") && !line.contains("connect") && !line.contains(":")){
+                QStringList resolutions = line.trimmed().replace("*", "").replace("+", "").split(" ", QT_SKIP_EMPTY_PARTS);
+                if (resolutions.size() >= 2 && monitorResolutionMap.size() > 0) {
+                    QString resolution = resolutions.at(0);
+                    resolutions.pop_front();
+
+                    for(auto rate : resolutions) {
+                        QString realResolution;
+
+                        if (round) {
+                            bool ok = false;
+                            double realRate = rate.toDouble(&ok);
+                            if (ok) {
+                                realResolution = tr("%1@%2Hz").arg(resolution).arg(QString::number(realRate, 'g', realRate >=100 ? 3 : 2));
+                            }
+                        } else {
+                            realResolution = tr("%1@%2Hz").arg(resolution).arg(rate);
+                        }
+
+                        if (!monitorResolutionMap.value(monitorResolutionMap.lastKey()).contains(realResolution)) {
+                            monitorResolutionMap[monitorResolutionMap.lastKey()].append(realResolution);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (monitorResolutionMap.keys().contains(key)) {
+        return QMap<QString, QStringList>{{key, monitorResolutionMap.value(key)}};
+    } else {
+        monitorResolutionMap.clear();
+    }
+
+    return monitorResolutionMap;
+}
