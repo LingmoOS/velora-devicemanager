@@ -1,3 +1,9 @@
+velora-devicemanager (6.0.60.lingmo.1) unstable; urgency=medium
+
+  * disable driver repository version detection.
+
+ -- Lingmo OS Team <team@lingmo.org>  Sat, 13 Jun 2026 03:47:00 +0800
+
 velora-devicemanager (6.0.59.lingmo.1) unstable; urgency=medium
 
   * new release for Lingmo OS.

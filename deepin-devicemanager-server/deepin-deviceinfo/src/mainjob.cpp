@@ -151,13 +151,13 @@ void MainJob::initDriverRepoSource()
         return;
     }
 
-    QString major, minor;
-    if (getVersion(major, minor) && major == "25") {
-        file.write("deb https://pro-driver-packages.uniontech.com/driver-V25 snipe non-free\n");
-    } else {
-        file.write("deb https://pro-driver-packages.uniontech.com eagle non-free\n");
-    }
-    file.close();
+    // QString major, minor;
+    // if (getVersion(major, minor) && major == "25") {
+    //     file.write("deb https://pro-driver-packages.uniontech.com/driver-V25 snipe non-free\n");
+    // } else {
+    //     file.write("deb https://pro-driver-packages.uniontech.com eagle non-free\n");
+    // }
+    // file.close();
 
     QString cmd = "apt update";
     QProcess process;
