@@ -11,7 +11,7 @@
 class DeviceInterface : public QObject, protected QDBusContext
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.deepin.DeviceInfo")
+    Q_CLASSINFO("D-Bus Interface", "org.lingmo.DeviceInfo")
 
 public:
     explicit DeviceInterface(const char *name, QObject *parent = nullptr);

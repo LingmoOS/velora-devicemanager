@@ -9,9 +9,9 @@
 
 using namespace DDLog;
 
-const QString SERVICE_NAME = "com.deepin.anything";
-const QString SERVICE_PATH = "/com/deepin/anything";
-const QString INTERFACE = "com.deepin.anything";
+const QString SERVICE_NAME = "com.lingmo.anything";
+const QString SERVICE_PATH = "/com/lingmo/anything";
+const QString INTERFACE = "com.lingmo.anything";
 
 // 以下这个问题可以避免单例的内存泄露问题
 std::atomic<DBusAnythingInterface *> DBusAnythingInterface::s_Instance;

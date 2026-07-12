@@ -150,7 +150,7 @@ void CommonTools::feedback()
 {
     qCDebug(appLog) << "Initiating feedback session";
 
-    QDBusInterface interface("com.deepin.dde.ServiceAndSupport",
+    QDBusInterface interface("com.lingmo.ServiceAndSupport",
                               "/com/deepin/dde/ServiceAndSupport",
                               "com.deepin.dde.ServiceAndSupport");
 
@@ -308,7 +308,7 @@ QString CommonTools::preGenerateGpuInfo()
     }
 
     if (gpuMemInfo.isEmpty()) {
-        QDBusInterface iface("org.deepin.DeviceInfo",
+        QDBusInterface iface("org.lingmo.DeviceInfo",
                              "/org/deepin/DeviceInfo",
                              "org.deepin.DeviceInfo",
                              QDBusConnection::systemBus());

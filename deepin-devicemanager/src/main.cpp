@@ -153,9 +153,9 @@ int main(int argc, char *argv[])
 
         QDBusConnection dbus = QDBusConnection::sessionBus();
         qCDebug(appLog) << "Registering DBus service...";
-        if (dbus.registerService("com.deepin.DeviceManagerNotify")) {
+        if (dbus.registerService("com.lingmo.DeviceManagerNotify")) {
             qCDebug(appLog) << "DBus service registered successfully";
-            dbus.registerObject("/com/deepin/DeviceManagerNotify", &app, QDBusConnection::ExportScriptableSlots);
+            dbus.registerObject("/com/lingmo/DeviceManagerNotify", &app, QDBusConnection::ExportScriptableSlots);
             app.parseCmdLine();
             app.activateWindow();
             return app.exec();
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
                 var = parser.positionalArguments().at(0);
             }
             qCInfo(appLog) << var;
-            QDBusInterface notification("com.deepin.DeviceManagerNotify", "/com/deepin/DeviceManagerNotify", "com.deepin.DeviceManagerNotify", QDBusConnection::sessionBus());
+            QDBusInterface notification("com.lingmo.DeviceManagerNotify", "/com/lingmo/DeviceManagerNotify", "com.lingmo.DeviceManagerNotify", QDBusConnection::sessionBus());
             QDBusMessage msg = notification.call(QDBus::AutoDetect, "startDeviceManager", var);
             return 0;
         }

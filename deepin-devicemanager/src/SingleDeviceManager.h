@@ -19,7 +19,7 @@ DWIDGET_USE_NAMESPACE
 class SingleDeviceManager : public DApplication
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.deepin.DeviceManagerNotify")
+    Q_CLASSINFO("D-Bus Interface", "com.lingmo.DeviceManagerNotify")
 
 public:
     enum TaskState {

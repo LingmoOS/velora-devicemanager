@@ -19,17 +19,17 @@ using namespace DDLog;
 std::atomic<DBusWakeupInterface *> DBusWakeupInterface::s_Instance;
 std::mutex DBusWakeupInterface::m_mutex;
 
-const QString SERVICE_NAME = "org.deepin.DeviceControl";
-const QString WAKEUP_SERVICE_PATH = "/org/deepin/DeviceControl";
-const QString WAKEUP_INTERFACE = "org.deepin.DeviceControl";
+const QString SERVICE_NAME = "org.lingmo.DeviceControl";
+const QString WAKEUP_SERVICE_PATH = "/org/lingmo/DeviceControl";
+const QString WAKEUP_INTERFACE = "org.lingmo.DeviceControl";
 
-const QString INPUT_SERVICE_NAME_V23 = "org.deepin.dde.InputDevices1";
-const QString INPUT_WAKEUP_SERVICE_PATH_V23 = "/org/deepin/dde/InputDevices1";
-const QString INPUT_WAKEUP_INTERFACE_V23 = "org.deepin.dde.InputDevices1";
+const QString INPUT_SERVICE_NAME_V23 = "org.lingmo.InputDevices1";
+const QString INPUT_WAKEUP_SERVICE_PATH_V23 = "/org/lingmo/InputDevices1";
+const QString INPUT_WAKEUP_INTERFACE_V23 = "org.lingmo.InputDevices1";
 
-const QString INPUT_SERVICE_NAME_V20 = "com.deepin.system.InputDevices";
-const QString INPUT_WAKEUP_SERVICE_PATH_V20 = "/com/deepin/system/InputDevices";
-const QString INPUT_WAKEUP_INTERFACE_V20 = "com.deepin.system.InputDevices";
+const QString INPUT_SERVICE_NAME_V20 = "com.lingmo.system.InputDevices";
+const QString INPUT_WAKEUP_SERVICE_PATH_V20 = "/com/lingmo/system/InputDevices";
+const QString INPUT_WAKEUP_INTERFACE_V20 = "com.lingmo.system.InputDevices";
 
 inline bool isV20() { return Dtk::Core::DSysInfo::majorVersion() == "20"; }
 const QString INPUT_SERVICE_NAME = isV20() ? INPUT_SERVICE_NAME_V20 : INPUT_SERVICE_NAME_V23;

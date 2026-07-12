@@ -3,12 +3,12 @@
 %define specrelease 1
 %endif
 
-Name:           deepin-devicemanager
+Name:           lingmo-devicemanager
 Version:        5.8.5.40
 Release:        %{specrelease}
 Summary:        Device Manager is a handy tool for viewing hardware information and managing the devices
 License:        GPLv3+
-URL:            https://github.com/linuxdeepin/deepin-devicemanager
+URL:            https://github.com/linuxdeepin/lingmo-devicemanager
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRequires: gcc-c++
@@ -32,7 +32,7 @@ Requires: xorg-x11-server-utils
 Requires: hwinfo
 Requires: cups
 Requires: upower
-Requires: deepin-shortcut-viewer
+Requires: lingmo-shortcut-viewer
 Requires: lshw
 Requires: util-linux
 
@@ -69,7 +69,7 @@ systemctl enable deepin-devicemanager-server.service
 /usr/share/polkit-1/actions/com.deepin.deepin-devicemanager.policy
 /lib/systemd/system/deepin-devicemanager-server.service
 %{_bindir}/deepin-devicemanager-server
-%{_datadir}/deepin-manual/manual-assets/application/deepin-devicemanager/device-manager/*
+%{_datadir}/deepin-manual/manual-assets/application/lingmo-devicemanager/device-manager/*
 /etc/dbus-1/system.d/com.deepin.devicemanager.conf
 
 %changelog

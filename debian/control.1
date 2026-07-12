@@ -1,4 +1,4 @@
-Source: deepin-devicemanager
+Source: lingmo-devicemanager
 Section: utils
 Priority: optional
 Maintainer: Packages <packages@deepin.com>
@@ -13,7 +13,7 @@ Build-Depends: debhelper-compat (= 11),
  libqapt3-runtime,
  libpolkit-qt5-1-dev,
  lingmo-desktop-base,
- libdeepin-service-framework-dev (> 1.0.9),
+ liblingmo-service-framework-dev (> 1.0.9),
  qtbase5-dev,
  qtbase5-dev-tools,
  qtbase5-private-dev,
@@ -26,7 +26,7 @@ Build-Depends: debhelper-compat (= 11),
  libqt5sql5
 Standards-Version: 4.1.3
 
-Package: deepin-devicemanager
+Package: lingmo-devicemanager
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  dmidecode,
@@ -34,12 +34,12 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
  hwinfo,
  cups,
  upower,
- deepin-shortcut-viewer,
+ lingmo-shortcut-viewer,
  lshw,
  libdtkcore5,
  libkmod2,
- libdeepin-service-framework,
- deepin-service-manager,
+ liblingmo-service-framework,
+ lingmo-service-manager,
  usbutils,
  pciutils,
  smartmontools,

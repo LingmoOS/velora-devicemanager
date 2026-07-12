@@ -15,13 +15,13 @@
 
 using namespace DDLog;
 
-const QString Service_V23 = "org.deepin.dde.InputDevices1";
-const QString Path_V23 = "/org/deepin/dde/InputDevice1/TouchPad";
-const QString Interface_V23 = "org.deepin.dde.InputDevice1.TouchPad";
+const QString Service_V23 = "org.lingmo.InputDevices1";
+const QString Path_V23 = "/org/lingmo/InputDevice1/TouchPad";
+const QString Interface_V23 = "org.lingmo.InputDevice1.TouchPad";
 
-const QString Service_V20 = "com.deepin.daemon.InputDevices";
-const QString Path_V20 = "/com/deepin/daemon/InputDevice/TouchPad";
-const QString Interface_V20 = "com.deepin.daemon.InputDevice.TouchPad";
+const QString Service_V20 = "com.lingmo.daemon.InputDevices";
+const QString Path_V20 = "/com/lingmo/daemon/InputDevice/TouchPad";
+const QString Interface_V20 = "com.lingmo.daemon.InputDevice.TouchPad";
 
 inline bool isV20() { return Dtk::Core::DSysInfo::majorVersion() == "20"; }
 const QString Service = isV20() ? Service_V20 : Service_V23;

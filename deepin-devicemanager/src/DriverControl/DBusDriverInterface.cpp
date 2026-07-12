@@ -14,9 +14,9 @@ using namespace DDLog;
 std::atomic<DBusDriverInterface *> DBusDriverInterface::s_Instance;
 std::mutex DBusDriverInterface::m_mutex;
 
-const QString SERVICE_NAME = "org.deepin.DeviceControl";
-const QString DRIVER_SERVICE_PATH = "/org/deepin/DeviceControl";
-const QString DRIVER_INTERFACE = "org.deepin.DeviceControl";
+const QString SERVICE_NAME = "org.lingmo.DeviceControl";
+const QString DRIVER_SERVICE_PATH = "/org/lingmo/DeviceControl";
+const QString DRIVER_INTERFACE = "org.lingmo.DeviceControl";
 
 void DBusDriverInterface::uninstallDriver(const QString &driver)
 {

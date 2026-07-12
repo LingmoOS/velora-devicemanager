@@ -89,7 +89,7 @@ void MainJob::slotWakeupHandle(bool isSleep)
             return;
 
         QProcess process; //先唤醒DBUS
-        QString command = "gdbus call --system --dest org.deepin.DeviceControl --object-path /org/deepin/DeviceControl --method org.deepin.DeviceControl.disableInDevice";
+        QString command = "gdbus call --system --dest org.lingmo.DeviceControl --object-path /org/lingmo/DeviceControl --method org.lingmo.DeviceControl.disableInDevice";
         process.start(command);
         process.waitForFinished(1000);
 

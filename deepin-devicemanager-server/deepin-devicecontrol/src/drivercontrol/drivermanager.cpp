@@ -393,8 +393,8 @@ bool DriverManager::isSigned(const QString &filepath)
     }
 
     //如果是开发者模式，直接返回true
-    QDBusInterface *dbusInterFace = new QDBusInterface("com.deepin.sync.Helper", "/com/deepin/sync/Helper",
-                                                       "com.deepin.sync.Helper", QDBusConnection::systemBus());
+    QDBusInterface *dbusInterFace = new QDBusInterface("com.lingmo.sync.Helper", "/com/lingmo/sync/Helper",
+                                                       "com.lingmo.sync.Helper", QDBusConnection::systemBus());
     bool isDeveloperMode = dbusInterFace->property("DeveloperMode").toBool();                            // 判断当前是否处于开发者模式
 
     if (isDeveloperMode) {

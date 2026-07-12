@@ -55,7 +55,7 @@ private:
     void init();
 
     /**
-     * @brief hasLFT 判断是否可以通过com.deepin.anything遍历驱动文件
+     * @brief hasLFT 判断是否可以通过com.lingmo.anything遍历驱动文件
      * ************* /home 可能不行 需要使用 /data/home
      * @param path 需要判断的目录
      * @return

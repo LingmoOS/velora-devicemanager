@@ -35,11 +35,11 @@ int main(int argc, char *argv[])
 
     ControlInterface controlInterface;
     QDBusConnection connection = controlInterface.qDbusConnection();
-    if (!connection.registerObject("/org/deepin/DeviceControl", &controlInterface,
+    if (!connection.registerObject("/org/lingmo/DeviceControl", &controlInterface,
                                    QDBusConnection::ExportScriptableContents)) {
         qCWarning(appLog) << "failed to register dbus object" << connection.lastError().message();
     }
-    if (!connection.registerService("org.deepin.DeviceControl")) {
+    if (!connection.registerService("org.lingmo.DeviceControl")) {
         qCWarning(appLog) << "failed to register dbus object" << connection.lastError().message();
     }
     return a.exec();

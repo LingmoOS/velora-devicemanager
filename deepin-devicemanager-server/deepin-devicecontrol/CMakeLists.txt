@@ -129,8 +129,8 @@ endif()
 
 install(TARGETS ${BIN_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES ${BIN_NAME}.json DESTINATION share/deepin-service-manager/other/)
-install(FILES org.deepin.devicecontrol.conf DESTINATION share/dbus-1/system.d/)
-install(FILES org.deepin.DeviceControl.service DESTINATION share/dbus-1/system-services/)
+install(FILES org.lingmo.devicecontrol.conf DESTINATION share/dbus-1/system.d/)
+install(FILES org.lingmo.DeviceControl.service DESTINATION share/dbus-1/system-services/)
 install(FILES deepin-devicecontrol.service DESTINATION lib/systemd/system/)
 # 添加安全加固策略
 install(DIRECTORY deepin-service-group@.service.d DESTINATION /etc/systemd/system/)

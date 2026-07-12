@@ -88,7 +88,7 @@ DeviceInterface::DeviceInterface(const char *name, QObject *parent)
             QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals | QDBusConnection::ExportAllProperties;
 
     QDBusConnection::connectToBus(QDBusConnection::SystemBus, QString(name))
-            .registerObject("/org/deepin/DeviceInfo", this, opts);
+            .registerObject("/org/lingmo/DeviceInfo", this, opts);
 }
 
 QString DeviceInterface::getInfo(const QString &key)

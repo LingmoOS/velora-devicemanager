@@ -470,7 +470,7 @@ void ThreadExecXrandr::getResolutionRateFromDBus(QList<QMap<QString, QString> > 
         if (!monitorInterface.isValid())
             continue;
 
-        QDBusMessage replay = monitorInterface.call("Get", DISPLAY_MONITOR_INTERFACE, "CurrentMode");   // "com.deepin.daemon.Display.Monitor","CurrentMode"
+        QDBusMessage replay = monitorInterface.call("Get", DISPLAY_MONITOR_INTERFACE, "CurrentMode");   // "com.lingmo.daemon.Display.Monitor","CurrentMode"
         QVariant v =  replay.arguments().first();
         qCDebug(appLog) << v.value<QDBusVariant>().variant();
         QDBusArgument arg = v.value<QDBusVariant>().variant().value<QDBusArgument>();

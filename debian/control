@@ -1,4 +1,4 @@
-Source: velora-devicemanager
+Source: lingmo-devicemanager
 Section: utils
 Priority: optional
 Maintainer: Lingmo OS Team <team@lingmo.org>
@@ -13,7 +13,7 @@ Build-Depends: debhelper-compat (= 11),
  libqapt3-qt6-runtime,
  libpolkit-qt6-1-dev,
  lingmo-desktop-base,
- libdeepin-service-framework-dev (> 1.0.9),
+ liblingmo-service-framework-dev (> 1.0.9),
  qt6-base-dev,
  qt6-base-dev-tools,
  qt6-base-private-dev,
@@ -26,9 +26,9 @@ Build-Depends: debhelper-compat (= 11),
  qt6-svg-dev,
  libqt6sql6
 Standards-Version: 4.5.0
-Homepage: https://github.com/LingmoOS/velora-devicemanager
+Homepage: https://github.com/LingmoOS/lingmo-devicemanager
 
-Package: deepin-devicemanager
+Package: lingmo-devicemanager
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  dmidecode,
@@ -36,12 +36,12 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
  hwinfo,
  cups,
  upower,
- deepin-shortcut-viewer,
+ lingmo-shortcut-viewer,
  lshw,
  libdtk6core,
  libkmod2,
- libdeepin-service-framework,
- deepin-service-manager,
+ liblingmo-service-framework,
+ lingmo-service-manager,
  usbutils,
  pciutils,
  smartmontools,

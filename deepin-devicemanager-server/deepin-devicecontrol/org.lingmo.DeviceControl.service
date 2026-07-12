@@ -1,4 +1,4 @@
 [D-BUS Service]
-Name=org.deepin.DeviceControl
+Name=org.lingmo.DeviceControl
 Exec=/usr/bin/false
 SystemdService=deepin-devicecontrol.service

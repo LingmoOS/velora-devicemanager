@@ -35,7 +35,7 @@ class ModCore;
 class ControlInterface : public QDBusService, protected QDBusContext
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.deepin.DeviceControl")
+    Q_CLASSINFO("D-Bus Interface", "org.lingmo.DeviceControl")
 public:
     explicit ControlInterface(QObject *parent = nullptr);
 

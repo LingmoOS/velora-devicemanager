@@ -16,9 +16,9 @@ using namespace DDLog;
 std::atomic<DBusEnableInterface *> DBusEnableInterface::s_Instance;
 std::mutex DBusEnableInterface::m_mutex;
 
-const QString SERVICE_NAME = "org.deepin.DeviceControl";
-const QString ENABLE_SERVICE_PATH = "/org/deepin/DeviceControl";
-const QString ENABLE_SERVICE_INTER = "org.deepin.DeviceControl";
+const QString SERVICE_NAME = "org.lingmo.DeviceControl";
+const QString ENABLE_SERVICE_PATH = "/org/lingmo/DeviceControl";
+const QString ENABLE_SERVICE_INTER = "org.lingmo.DeviceControl";
 
 DBusEnableInterface::DBusEnableInterface()
     : mp_Iface(nullptr)

@@ -18,9 +18,9 @@ using namespace DDLog;
 std::atomic<DBusInterface *> DBusInterface::s_Instance;
 std::mutex DBusInterface::m_mutex;
 
-const QString SERVICE_NAME = "org.deepin.DeviceInfo";
-const QString DEVICE_SERVICE_PATH = "/org/deepin/DeviceInfo";
-const QString DEVICE_SERVICE_INTERFACE = "org.deepin.DeviceInfo";
+const QString SERVICE_NAME = "org.lingmo.DeviceInfo";
+const QString DEVICE_SERVICE_PATH = "/org/lingmo/DeviceInfo";
+const QString DEVICE_SERVICE_INTERFACE = "org.lingmo.DeviceInfo";
 
 DBusInterface::DBusInterface()
     : mp_Iface(nullptr)
@@ -42,7 +42,7 @@ bool DBusInterface::getInfo(const QString &key, QString &info)
     } else {
         qCInfo(appLog) << "unsucess in getting info from getInfo :"  << key;
         QProcess process;
-        QString command = "gdbus call --system --dest org.deepin.DeviceInfo --object-path /org/deepin/DeviceInfo --method org.deepin.DeviceInfo.getInfo hwinfo";
+        QString command = "gdbus call --system --dest org.lingmo.DeviceInfo --object-path /org/lingmo/DeviceInfo --method org.lingmo.DeviceInfo.getInfo hwinfo";
         process.start(command);
         process.waitForFinished();
         QByteArray output = process.readAllStandardOutput();
